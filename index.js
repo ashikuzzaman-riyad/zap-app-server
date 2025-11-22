@@ -114,15 +114,16 @@ async function run() {
     });
 
     // payment related get api
-    app.get("payments", async (req, res) => {
+    app.get("/payments", async (req, res) => {
       const email = req.query.email;
       const query = {};
       if (email) {
         query.customerEmail = email;
-        const cursor = paymentCollection.findOne(query)
-        const result = await cursor.toArray()
-        res.send(result)
       }
+     
+      const cursor = paymentCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
     });
 
     // payment success and update api
