@@ -82,16 +82,18 @@ async function run() {
     // user get api
     app.get("/users", async (req, res) => {
       const textSearch = req.query.textSearch;
-      const query = {}
-      if(textSearch){
+      const query = {};
+      if (textSearch) {
         query.$or = [
-         {displayName: {$regex: textSearch, $options: 'i'}},
-         {email: {$regex: textSearch, $options: 'i'}},
-
-        ]
+          { displayName: { $regex: textSearch, $options: "i" } },
+          { email: { $regex: textSearch, $options: "i" } },
+        ];
       }
 
-      const cursor = userCollection.find(query).sort({ createdAt: -1 }).limit(5);
+      const cursor = userCollection
+        .find(query)
+        .sort({ createdAt: -1 })
+        .limit(5);
       const result = await cursor.toArray();
       res.send(result);
     });
@@ -148,9 +150,16 @@ async function run() {
       res.send(result);
     });
     app.get("/riders", async (req, res) => {
+      const { status, district, workStatus } = req.query;
       const query = {};
-      if (req.query.status) {
-        query.status = req.query.status;
+      if (status) {
+        query.status = status;
+      }
+      if (district) {
+        query.district = district;
+      }
+      if (workStatus) {
+        query.workStatus = workStatus;
       }
       const cursor = riderCollection.find(query);
       const result = await cursor.toArray();
@@ -163,6 +172,7 @@ async function run() {
       const updateDoc = {
         $set: {
           status: status,
+          workStatus: "available",
         },
       };
       const result = await riderCollection.updateOne(query, updateDoc);
@@ -197,9 +207,13 @@ async function run() {
       const option = { sort: { createdAt: -1 } };
 
       //  email data find one by one
-      const { email } = req.query;
+      const { email, deliveryStatus } = req.query;
       if (email) {
         query.SenderEmail = email;
+      }
+      // deliveryStatus
+      if (deliveryStatus) {
+        query.deliveryStatus = deliveryStatus;
       }
 
       const cursor = parcelCollection.find(query, option);
@@ -306,6 +320,7 @@ async function run() {
         const update = {
           $set: {
             paymentStatus: "paid",
+            deliveryStatus: "pending-pickup",
             trackingId: trackingId,
           },
         };
