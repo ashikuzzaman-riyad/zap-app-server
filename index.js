@@ -156,7 +156,7 @@ async function run() {
         query.status = status;
       }
       if (district) {
-        query.district = district;
+        query.RiderDistrict = district;
       }
       if (workStatus) {
         query.workStatus = workStatus;
@@ -192,7 +192,7 @@ async function run() {
       res.send(result);
     });
 
-    app.delete("/rider/:id", async (req, res) => {
+    app.delete("/riders/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
 
@@ -207,9 +207,13 @@ async function run() {
       const option = { sort: { createdAt: -1 } };
 
       //  email data find one by one
-      const { email, deliveryStatus } = req.query;
+      const { email, deliveryStatus, district } = req.query;
       if (email) {
         query.SenderEmail = email;
+      }
+      // district
+      if (district) {
+        query.district = district;
       }
       // deliveryStatus
       if (deliveryStatus) {
@@ -230,6 +234,32 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/parcels/rider", async (req, res) => {
+      const { email, deliveryStatus } = req.query;
+      const query = {};
+      if (email) {
+        query.riderEmail = email;
+      }
+      if (deliveryStatus) {
+        query.deliveryStatus = deliveryStatus;
+      }
+      const cursor = parcelCollection.find(query);
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    app.patch("/parcels/:id/status", async (req, res) => {
+      const { deliveryStatus } = req.body;
+      const query = { _id: new ObjectId(req.params.id) };
+      const updatedDoc = {
+        $set: {
+          deliveryStatus: deliveryStatus,
+        },
+      };
+      const result = await parcelCollection.updateOne(query, updatedDoc);
+      res.send(result)
+    });
+
     // parcel payment api
     app.get("/parcels/:id", async (req, res) => {
       const id = req.params.id;
@@ -238,6 +268,33 @@ async function run() {
       res.send(result);
     });
 
+    // parcel patch
+    app.patch("/parcels/:id", async (req, res) => {
+      const { riderId, riderName, riderEmail } = req.body;
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          deliveryStatus: "driver-assign",
+          riderId: riderId,
+          riderName: riderName,
+          riderEmail: riderEmail,
+        },
+      };
+      const result = await parcelCollection.updateOne(query, updatedDoc);
+
+      const riderQuery = { _id: new ObjectId(riderId) };
+      const RiderUpdatedDoc = {
+        $set: {
+          workStatus: "in-delivery",
+        },
+      };
+      const riderResult = await riderCollection.updateOne(
+        riderQuery,
+        RiderUpdatedDoc
+      );
+      res.send(result);
+    });
     // single parcel delete
 
     app.delete("/parcels/:id", async (req, res) => {
